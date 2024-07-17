@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="zipcodeTab" translate="label" sortOrder="10">
+            <label>Kitchen 365</label>
+        </tab>
+        <section id="zipcodeSection" translate="label" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>wide</class>
+            <label>Manage ZipCode</label>
+            <tab>zipcodeTab</tab>
+            <resource>Kitchen_ZipCodes::zipcodes_config</resource>
+            <group id="zipcodeGroup" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>ZipCode Configuration</label>
+                <field id="dynamic_options" translate="label" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Options</label>
+                    <backend_model>Kitchen\ZipCodes\Block\Adminhtml\System\Config\Backend\ZipCodeOptions</backend_model>
+                    <frontend_model>Kitchen\ZipCodes\Block\Adminhtml\System\Config\Form\Field\ZipCodeFrontOptions</frontend_model>
+                </field> 
+            </group>
+        </section>
+    </system>
+</config>

@@ -1,0 +1,168 @@
+<?php
+// Disable phpcs rule for "this" in template
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundThis
+
+// Get the helper and address block
+$helper = $this->helper(\Magento\CatalogSearch\Helper\Data::class);
+$addressObj = $block->getLayout()->createBlock('Kitchen\ZipCodes\Block\Address');
+
+// Check if the current page is the customer account index page
+$isCustomerAccountIndex = $addressObj->isCustomerAccountIndex() ? 'true' : 'false';
+// Get the count of addresses for the current customer
+$hasAddress = $addressObj->getAddressesCount();
+
+// $customerZipCodes = $addressObj->getCustomerZipCodes();
+
+// Check if the customer is logged in
+$isLoggedIn = $addressObj->isLoggedIn() ? 'true' : 'false';
+?>
+
+<!-- Advanced Search Link -->
+<div class="nested">
+    <a class="action advanced" href="<?= $block->escapeUrl($helper->getAdvancedSearchUrl()) ?>" data-action="advanced-search">
+        <?= $block->escapeHtml(__('Advanced Search')) ?>
+    </a>
+</div>
+
+<!-- Zip Code Input -->
+<div class="zipcode-input">
+    <label for="customer_zipcode"><?php echo __('Enter Zipcode'); ?></label>
+    <input type="text" id="customer_zipcode" name="customer_zipcode" value="<?= isset($_SESSION['customer_zipcode']) ? $_SESSION['customer_zipcode'] : '' ?>">
+</div>
+
+<!-- Address Popup Form -->
+<div id="address-popup-form" style="display: none;">
+    <form id="address-popup">
+        <label for="street"><?php echo __('Street'); ?></label>
+        <input type="text" id="street" name="street" required>
+
+        <label for="city"><?php echo __('City'); ?></label>
+        <input type="text" id="city" name="city" required>
+
+        <label for="state"><?php echo __('State'); ?></label>
+        <input type="text" id="state" name="state" required>
+
+        <label for="country_id"><?php echo __('Country'); ?></label>
+        <input type="text" id="country_id" name="country_id" required>
+
+        <label for="postcode"><?php echo __('Postcode'); ?></label>
+        <input type="text" id="postcode" name="postcode" required>
+
+        <label for="telephone"><?php echo __('Telephone'); ?></label>
+        <input type="text" id="telephone" name="telephone" required>
+
+        <label>
+            <input type="checkbox" name="default_billing"><?php echo __('Default Billing Address'); ?>
+        </label>
+        <label>
+            <input type="checkbox" name="default_shipping"><?php echo __('Default Shipping Address'); ?>
+        </label>
+    </form>
+</div>
+
+<script>
+    require([
+        'jquery',
+        'mage/url',
+        'Magento_Ui/js/modal/modal'
+    ], function ($, urlBuilder, modal) {
+        $(document).ready(function() {
+            // Get PHP variables into JavaScript
+            var hasAddress = <?= $hasAddress; ?>;
+            var isCustomerAccountIndex = <?= $isCustomerAccountIndex; ?>;
+            var isLoggedIn = <?= $isLoggedIn; ?>;
+
+            if (!isLoggedIn) {
+                localStorage.removeItem('customer_zipcode');
+                $('#customer_zipcode').val('');
+            } else {
+                var customerZipCode = localStorage.getItem('customer_zipcode');
+                if (customerZipCode) {
+                    $('#customer_zipcode').val(customerZipCode);
+                    $('#customer_zipcode').change();
+                }
+            } 
+            
+
+
+
+
+            // If the customer has no addresses and is on the account index page, show the address popup
+            if (hasAddress == 0 && isCustomerAccountIndex) {
+                var options = {
+                    type: 'popup',
+                    responsive: true,
+                    innerScroll: true,
+                    title: $.mage.__('Shipping Address'),
+                    buttons: [{
+                        text: $.mage.__('Save'),
+                        class: 'continueBtn',
+                        click: function () {
+                            // Collect form data
+                            var formData = {
+                                'street': $('#street').val(),
+                                'city': $('#city').val(),
+                                'state': $('#state').val(),
+                                'country_id': $('#country_id').val(),
+                                'postcode': $('#postcode').val(),
+                                'telephone': $('#telephone').val(),
+                                'default_billing': $('[name="default_billing"]').is(':checked'),
+                                'default_shipping': $('[name="default_shipping"]').is(':checked')
+                            };
+
+                            // Send AJAX request to save the address
+                            $.ajax({
+                                url: urlBuilder.build('zipcode/index/save'),
+                                data: JSON.stringify(formData),
+                                type: 'POST',
+                                contentType: 'application/json',
+                                success: function (response) {
+                                    if (response.success) {
+                                        location.reload();
+                                    } else {
+                                        alert($.mage.__(response.message));
+                                    }
+                                },
+                                error: function () {
+                                    alert($.mage.__('An error occurred while saving the address.'));
+                                }
+                            });
+                        }
+                    }]
+                };
+
+                // Prevent the default form submission
+                $('#address-popup').submit(function (event) {
+                    event.preventDefault();
+                });
+
+                // Initialize and open the modal
+                $('#address-popup-form').modal(options).modal("openModal");
+            }
+
+            // Handle zip code input change
+            $('#customer_zipcode').change(function () {
+                var enteredZipCode = $(this).val();
+                localStorage.setItem('customer_zipcode', enteredZipCode);
+
+                // Send AJAX request to save the zip code
+                $.ajax({
+                    url: urlBuilder.build('zipcode/index/savezipcode'),
+                    data: {zip_code: enteredZipCode},
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert($.mage.__('Failed to update default addresses.'));
+                        }
+                    },
+                    error: function () {
+                        alert($.mage.__('An error occurred while processing your request.'));
+                    }
+                });
+            });
+        });
+    });
+</script>
